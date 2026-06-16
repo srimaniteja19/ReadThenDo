@@ -7,16 +7,20 @@ import type { Phase } from "@/types/habits";
 interface PlanPhaseProps {
   phase: Phase;
   index: number;
+  bento?: boolean;
 }
 
 const PHASE_COLORS = ["var(--h1)", "var(--h2)", "var(--h3)"] as const;
 
-export default function PlanPhase({ phase, index }: PlanPhaseProps) {
+export default function PlanPhase({ phase, index, bento = false }: PlanPhaseProps) {
   const [expanded, setExpanded] = useState(true);
   const color = PHASE_COLORS[index] ?? PHASE_COLORS[0];
 
   return (
-    <section className="card phase-enter" style={{ padding: 0, overflow: "hidden" }}>
+    <section
+      className={`card phase-enter ${bento ? "card-bento" : ""}`}
+      style={{ padding: 0, overflow: "hidden", height: bento ? "100%" : undefined }}
+    >
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}

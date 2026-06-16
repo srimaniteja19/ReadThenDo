@@ -8,6 +8,7 @@ interface HabitCardProps {
   number: number;
   variant: 1 | 2 | 3;
   onCopy?: (message: string) => void;
+  bento?: boolean;
 }
 
 const VARIANT_STYLES = {
@@ -52,6 +53,7 @@ export default function HabitCard({
   number,
   variant,
   onCopy,
+  bento = false,
 }: HabitCardProps) {
   const styles = VARIANT_STYLES[variant];
   const emoji = getHabitEmoji(habit);
@@ -68,8 +70,12 @@ export default function HabitCard({
 
   return (
     <article
-      className="card habit-card-enter overflow-hidden"
-      style={{ background: styles.bg, borderColor: "var(--border)" }}
+      className={`card habit-card-enter overflow-hidden ${bento ? "card-bento" : ""}`}
+      style={{
+        background: styles.bg,
+        borderColor: "var(--border)",
+        ["--bento-i" as string]: number - 1,
+      }}
     >
       <div
         className="habit-stripe"

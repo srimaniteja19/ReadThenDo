@@ -3,9 +3,9 @@
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import GoalChips from "@/components/GoalChips";
-import HabitCard from "@/components/HabitCard";
+import BentoHabits from "@/components/BentoHabits";
+import BentoPlan from "@/components/BentoPlan";
 import ModeSwitcher from "@/components/ModeSwitcher";
-import PlanPhase from "@/components/PlanPhase";
 import StepDots from "@/components/StepDots";
 import ThemeToggle from "@/components/ThemeToggle";
 import Toast from "@/components/Toast";
@@ -245,7 +245,9 @@ export default function Home() {
       <ThemeToggle />
       <Toast message={toast} onDismiss={() => setToast(null)} />
 
-      <div className="page-shell">
+      <div
+        className={`page-shell ${screen === "habits" || screen === "plan" ? "page-shell--bento" : ""}`}
+      >
         <header className="hero section-gap" style={{ marginBottom: 32 }}>
           <div>
             <h1 className="app-logo" aria-label="ReadThenDo">
@@ -513,73 +515,25 @@ export default function Home() {
           )}
 
           {screen === "habits" && data && (
-            <>
-              <p
-                className="text-center"
-                style={{ color: "var(--text-secondary)", fontSize: 14 }}
-              >
-                {mode === "books"
+            <BentoHabits
+              data={data}
+              subtitle={
+                mode === "books"
                   ? "Here are 3 habits you can start today, grounded in the book's framework."
-                  : `Here are 3 habits to ${customGoal.goal.toLowerCase()}, built on the book's framework.`}
-              </p>
-              <div className="card-gap">
-                {data.habits.map((habit, index) => (
-                  <HabitCard
-                    key={habit.name}
-                    habit={habit}
-                    number={index + 1}
-                    variant={(index + 1) as 1 | 2 | 3}
-                    onCopy={showToast}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setScreen("plan")}
-                className="btn-primary"
-              >
-                <Sparkles size={16} />
-                See 30-day plan
-              </button>
-            </>
+                  : `Here are 3 habits to ${customGoal.goal.toLowerCase()}, built on the book's framework.`
+              }
+              onViewPlan={() => setScreen("plan")}
+              onCopy={showToast}
+            />
           )}
 
           {screen === "plan" && data && (
-            <>
-              <p
-                className="text-center"
-                style={{
-                  color: "var(--text-primary)",
-                  fontSize: 15,
-                  lineHeight: 1.65,
-                }}
-              >
-                {data.plan.intro}
-              </p>
-              <div className="card-gap">
-                {data.plan.phases.map((phase, index) => (
-                  <PlanPhase key={phase.days} phase={phase} index={index} />
-                ))}
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                {mode === "books" && (
-                  <button
-                    type="button"
-                    onClick={() => setScreen("habits")}
-                    className="btn-ghost flex-1"
-                  >
-                    Back to habits
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleStartOver}
-                  className={`btn-ghost ${mode === "books" ? "flex-1" : "w-full"}`}
-                >
-                  Start over
-                </button>
-              </div>
-            </>
+            <BentoPlan
+              data={data}
+              showBackToHabits={mode === "books"}
+              onBackToHabits={() => setScreen("habits")}
+              onStartOver={handleStartOver}
+            />
           )}
         </main>
       </div>

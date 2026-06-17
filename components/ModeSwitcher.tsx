@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-type AppMode = "books" | "custom";
+import type { AppMode } from "@/types/habits";
 
 interface ModeSwitcherProps {
   mode: AppMode;
@@ -11,7 +10,8 @@ interface ModeSwitcherProps {
 
 const MODES: { id: AppMode; label: string }[] = [
   { id: "books", label: "📖 Books" },
-  { id: "custom", label: "🎯 Custom Goal" },
+  { id: "custom", label: "🎯 Goal" },
+  { id: "battle", label: "⚔️ Battle" },
 ];
 
 export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
@@ -37,7 +37,7 @@ export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
   return (
     <div
       ref={containerRef}
-      className="relative flex w-full max-w-md rounded-full p-1 sm:w-auto"
+      className="mode-switcher relative flex w-full max-w-lg rounded-full p-1"
       style={{ background: "var(--bg-subtle)" }}
     >
       <span
@@ -57,7 +57,7 @@ export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
           type="button"
           data-mode={id}
           onClick={() => onChange(id)}
-          className="relative z-10 flex-1 rounded-full px-5 py-2 text-sm font-medium transition-colors sm:flex-none"
+          className="relative z-10 flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors sm:px-4"
           style={{
             color:
               mode === id ? "var(--text-primary)" : "var(--text-secondary)",

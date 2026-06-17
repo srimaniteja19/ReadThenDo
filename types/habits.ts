@@ -33,7 +33,31 @@ export interface HabitPlan {
   phases: Phase[];
 }
 
+export type AppMode = "books" | "custom" | "battle";
+export type CheckInDay = 10 | 20 | 30;
+
+export interface HabitDNA {
+  label: string;
+  emoji: string;
+  tagline: string;
+}
+
+export interface HabitBattleResult {
+  winner: "A" | "B";
+  winnerName: string;
+  reason: string;
+  bookAStrength: string;
+  bookBStrength: string;
+  verdict: string;
+}
+
+export interface CheckInResult {
+  message: string;
+  plan: HabitPlan;
+}
+
 export interface APIResponse {
   habits: Habit[];
   plan: HabitPlan;
+  habitDNA?: HabitDNA;
 }

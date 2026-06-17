@@ -1,23 +1,39 @@
 "use client";
 
+import { Copy } from "lucide-react";
 import PlanPhase from "@/components/PlanPhase";
-import type { APIResponse } from "@/types/habits";
+import type { CheckInDay, APIResponse } from "@/types/habits";
 
 interface BentoPlanProps {
   data: APIResponse;
   showBackToHabits: boolean;
+  checkInMessage?: string | null;
   onBackToHabits: () => void;
   onStartOver: () => void;
+  onCheckIn: (day: CheckInDay) => void;
+  onCopyMarkdown?: () => void;
 }
 
 export default function BentoPlan({
   data,
   showBackToHabits,
+  checkInMessage,
   onBackToHabits,
   onStartOver,
+  onCheckIn,
+  onCopyMarkdown,
 }: BentoPlanProps) {
   return (
-    <div className="bento-results">
+    <div className="bento-results section-gap">
+      {checkInMessage && (
+        <section className="glass-card checkin-nudge phase-enter">
+          <p className="section-heading mb-2">Coach nudge</p>
+          <p style={{ color: "var(--text-primary)", fontSize: 14, lineHeight: 1.65 }}>
+            {checkInMessage}
+          </p>
+        </section>
+      )}
+
       <div className="bento-grid bento-grid--plan">
         <section className="bento-cell bento-intro glass-card phase-enter">
           <p className="section-heading mb-2">30-day plan</p>
@@ -47,6 +63,29 @@ export default function BentoPlan({
         ))}
 
         <div className="bento-cell bento-actions phase-enter">
+          <p className="section-heading mb-3">AI check-ins</p>
+          <div className="checkin-days mb-4">
+            {([10, 20, 30] as CheckInDay[]).map((day) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => onCheckIn(day)}
+                className="chip"
+              >
+                Check in Day {day}
+              </button>
+            ))}
+          </div>
+          {onCopyMarkdown && (
+            <button
+              type="button"
+              onClick={onCopyMarkdown}
+              className="btn-ghost w-full mb-3"
+            >
+              <Copy size={16} />
+              Copy plan as Markdown
+            </button>
+          )}
           <div className="flex flex-col gap-3 sm:flex-row">
             {showBackToHabits && (
               <button

@@ -54,7 +54,7 @@ export default function BentoHabits({
       <div className="bento-grid bento-grid--habits">
         <section className="bento-cell bento-intro glass-card phase-enter">
           <p className="section-heading mb-2">Your habits</p>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+          <p style={{ color: "var(--text-3)", fontSize: "0.9rem", lineHeight: 1.7 }}>
             {subtitle}
           </p>
           <div className="bento-stats">

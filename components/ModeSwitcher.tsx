@@ -36,19 +36,12 @@ export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
   }, [mode]);
 
   return (
-    <div
-      ref={containerRef}
-      className="mode-switcher relative flex w-full max-w-2xl rounded-full p-1"
-      style={{ background: "var(--bg-subtle)" }}
-    >
+    <div ref={containerRef} className="mode-switcher relative">
       <span
-        className="absolute top-1 rounded-full shadow-sm transition-all duration-250 ease-out"
+        className="mode-switcher-indicator"
         style={{
-          height: "calc(100% - 8px)",
           width: indicator.width,
           left: indicator.left,
-          background: "var(--bg-card)",
-          border: "1px solid var(--border)",
         }}
       />
 
@@ -58,11 +51,7 @@ export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
           type="button"
           data-mode={id}
           onClick={() => onChange(id)}
-          className="relative z-10 flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors sm:px-4"
-          style={{
-            color:
-              mode === id ? "var(--text-primary)" : "var(--text-secondary)",
-          }}
+          className={`mode-switcher-btn ${mode === id ? "mode-switcher-btn--active" : ""}`}
         >
           {label}
         </button>

@@ -11,21 +11,6 @@ interface HabitCardProps {
   bento?: boolean;
 }
 
-const VARIANT_STYLES = {
-  1: {
-    bg: "var(--h1-bg)",
-    accent: "var(--h1)",
-  },
-  2: {
-    bg: "var(--h2-bg)",
-    accent: "var(--h2)",
-  },
-  3: {
-    bg: "var(--h3-bg)",
-    accent: "var(--h3)",
-  },
-} as const;
-
 const EMOJI_RULES: { keywords: string[]; emoji: string }[] = [
   { keywords: ["focus", "deep", "concentrate", "attention"], emoji: "🎯" },
   { keywords: ["energy", "morning", "wake", "sleep"], emoji: "⚡" },
@@ -55,7 +40,6 @@ export default function HabitCard({
   onCopy,
   bento = false,
 }: HabitCardProps) {
-  const styles = VARIANT_STYLES[variant];
   const emoji = getHabitEmoji(habit);
   const numberLabel = String(number).padStart(2, "0");
 
@@ -70,69 +54,32 @@ export default function HabitCard({
 
   return (
     <article
-      className={`card habit-card-enter overflow-hidden ${bento ? "card-bento" : ""}`}
-      style={{
-        background: styles.bg,
-        borderColor: "var(--border)",
-        ["--bento-i" as string]: number - 1,
-      }}
+      className={`glass-card habit-card habit-card--${variant} habit-card-enter ${bento ? "card-bento" : ""}`}
+      style={{ ["--bento-i" as string]: number - 1 }}
     >
-      <div
-        className="habit-stripe"
-        style={{
-          background: `linear-gradient(135deg, ${styles.accent} 0%, transparent 60%)`,
-        }}
-      />
+      <div className="habit-card-bar" aria-hidden />
 
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <span className="text-2xl leading-none" aria-hidden>
-            {emoji}
-          </span>
-          <div>
-            <span
-              className="mb-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-              style={{
-                background: "var(--accent-light)",
-                color: "var(--accent-text)",
-              }}
-            >
-              {numberLabel}
-            </span>
-            <h3 className="card-title" style={{ color: "var(--text-primary)" }}>
-              {habit.name}
-            </h3>
-          </div>
-        </div>
+      <div className="habit-card-header">
+        <span className="habit-card-emoji" aria-hidden>
+          {emoji}
+        </span>
+        <span className="habit-number-badge">{numberLabel}</span>
       </div>
 
-      <p
-        className="mb-4"
-        style={{ color: "var(--text-secondary)", lineHeight: 1.65 }}
-      >
-        {habit.why}
-      </p>
+      <h3 className="habit-card-name">{habit.name}</h3>
+      <p className="habit-card-why">{habit.why}</p>
 
-      <div
-        className="relative rounded-[10px] px-3.5 py-3"
-        style={{ background: "var(--intention-bg)" }}
-      >
+      <div className="intention-box">
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute right-2.5 top-2.5 rounded-md p-1.5 transition hover:bg-black/5 dark:hover:bg-white/5"
+          className="intention-copy"
           aria-label="Copy implementation intention"
-          style={{ color: "var(--text-muted)" }}
         >
           <Copy size={14} />
         </button>
-        <p className="label-meta mb-1.5">💡 Implementation intention</p>
-        <p
-          className="pr-8 italic"
-          style={{ color: "var(--text-primary)", fontSize: 14 }}
-        >
-          {habit.intention}
-        </p>
+        <p className="section-heading mb-0">💡 Implementation intention</p>
+        <p className="intention-text">{habit.intention}</p>
       </div>
     </article>
   );

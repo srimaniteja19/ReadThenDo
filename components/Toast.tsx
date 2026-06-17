@@ -11,7 +11,7 @@ interface ToastProps {
 export default function Toast({
   message,
   onDismiss,
-  duration = 2000,
+  duration = 2500,
 }: ToastProps) {
   useEffect(() => {
     if (!message) return;

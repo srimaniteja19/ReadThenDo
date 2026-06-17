@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 interface BookInputToggleProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
@@ -13,8 +15,8 @@ export function BookInputToggle({ enabled, onToggle }: BookInputToggleProps) {
         checked={enabled}
         onChange={(e) => onToggle(e.target.checked)}
       />
-      <span className="book-input-toggle-track">
-        <span className="book-input-toggle-thumb" />
+      <span className="book-input-checkbox">
+        {enabled && <Check size={11} strokeWidth={3} />}
       </span>
       <span>Haven&apos;t read it yet?</span>
     </label>

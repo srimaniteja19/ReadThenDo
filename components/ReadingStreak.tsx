@@ -31,23 +31,27 @@ export default function ReadingStreak() {
 
   return (
     <div className="reading-streak glass-card">
-      <div className="reading-streak-main">
-        <span className="reading-streak-count">{count}</span>
-        <span className="label-meta">
-          book{count === 1 ? "" : "s"} distilled
-        </span>
-      </div>
-      {badge && (
-        <span className="reading-streak-badge">
-          {badge.emoji} {badge.label}
-        </span>
-      )}
-      {!badge && nextBadge && (
-        <span className="label-meta">
-          {nextBadge.minBooks - count} more for {nextBadge.emoji}{" "}
-          {nextBadge.label}
-        </span>
-      )}
+      <span>📚</span>
+      <span className="reading-streak-count">{count}</span>
+      <span>
+        book{count === 1 ? "" : "s"} distilled
+      </span>
+      {badge ? (
+        <>
+          <span className="reading-streak-sep">·</span>
+          <span>
+            {badge.emoji} {badge.label}
+          </span>
+        </>
+      ) : nextBadge ? (
+        <>
+          <span className="reading-streak-sep">·</span>
+          <span>
+            ✏️ {nextBadge.minBooks - count} more for {nextBadge.emoji}{" "}
+            {nextBadge.label}
+          </span>
+        </>
+      ) : null}
     </div>
   );
 }

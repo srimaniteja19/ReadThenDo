@@ -101,12 +101,15 @@ function LoadingStepIcon({
   if (index === activeIndex) {
     return (
       <span
-        className="inline-block h-2 w-2 rounded-full step-dot-pulse"
-        style={{ background: "var(--accent)" }}
+        className="inline-block h-2 w-2 rounded-full"
+        style={{
+          background: "var(--accent)",
+          boxShadow: "0 0 0 4px var(--accent-soft)",
+        }}
       />
     );
   }
-  return <span style={{ color: "var(--text-muted)" }}>○</span>;
+  return <span style={{ color: "var(--text-4)" }}>○</span>;
 }
 
 export default function Home() {
@@ -598,7 +601,7 @@ export default function Home() {
             : ""
         }`}
       >
-        <header className="hero section-gap" style={{ marginBottom: 32 }}>
+        <header className="hero" style={{ marginBottom: 32 }}>
           <div>
             <h1 className="app-logo" aria-label="ReadThenDo">
               <span className="app-logo-read">Read</span>
@@ -608,11 +611,11 @@ export default function Home() {
             <p className="hero-tagline">
               Turn books into habits. Start in 30 days.
             </p>
-            <div className="hero-emoji-row">
+            <div className="journey-row">
               <span>📖</span>
-              <span style={{ color: "var(--text-muted)" }}>→</span>
+              <span className="arrow">→</span>
               <span>✨</span>
-              <span style={{ color: "var(--text-muted)" }}>→</span>
+              <span className="arrow">→</span>
               <span>🌱</span>
             </div>
             <ReadingStreak />
@@ -629,7 +632,7 @@ export default function Home() {
           )}
         </header>
 
-        <main className="section-gap">
+        <main className={`section-gap screen-panel`}>
           {screen === "input" && mode === "books" && (
             <>
               <div>
@@ -989,7 +992,7 @@ export default function Home() {
               style={{ gap: 24 }}
             >
               <div className="loading-orb" />
-              <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+              <p className="loading-label">
                 {mode === "battle"
                   ? "Comparing habit systems…"
                   : mode === "synthesis"
@@ -1002,14 +1005,13 @@ export default function Home() {
                 {loadingSteps.map((label, index) => (
                   <li
                     key={label}
-                    className="loading-step flex items-center justify-center gap-2"
-                    style={{
-                      color:
-                        index <= loadingStepIndex
-                          ? "var(--accent-text)"
-                          : "var(--text-muted)",
-                      fontSize: 14,
-                    }}
+                    className={`loading-step flex items-center justify-center gap-2 ${
+                      index < loadingStepIndex
+                        ? "loading-step--done"
+                        : index === loadingStepIndex
+                          ? "loading-step--active"
+                          : ""
+                    }`}
                   >
                     <LoadingStepIcon
                       index={index}

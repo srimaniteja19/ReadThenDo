@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
-import { Caveat } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
-
-const caveat = Caveat({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-logo-script",
-});
 
 export const metadata: Metadata = {
   title: "ReadThenDo",
@@ -22,7 +15,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.className} ${caveat.variable}`}
+      className={GeistSans.className}
       suppressHydrationWarning
     >
       <head>
@@ -32,7 +25,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="ambient-orb ambient-orb--violet" aria-hidden />
+        <div className="ambient-orb ambient-orb--green" aria-hidden />
+        {children}
+      </body>
     </html>
   );
 }

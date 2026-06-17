@@ -18,14 +18,14 @@ export default function AuthorModeToggle({
 }: AuthorModeToggleProps) {
   return (
     <div className="author-mode">
-      <label className="book-input-toggle">
+      <label className="toggle-switch">
         <input
           type="checkbox"
           checked={enabled}
           onChange={(e) => onToggle(e.target.checked)}
         />
-        <span className="book-input-toggle-track">
-          <span className="book-input-toggle-thumb" />
+        <span className="toggle-switch-track">
+          <span className="toggle-switch-thumb" />
         </span>
         <span>What would the author say?</span>
       </label>

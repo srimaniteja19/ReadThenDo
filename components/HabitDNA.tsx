@@ -27,8 +27,8 @@ export default function HabitDNA({ dna, loading, onShare }: HabitDNAProps) {
 
   return (
     <section className="habit-dna glass-card phase-enter">
-      <div className="flex items-start justify-between gap-3">
-        <p className="section-heading">Habit DNA</p>
+      <div className="habit-dna-top">
+        <p className="section-heading mb-0">Habit DNA</p>
         {onShare && (
           <button
             type="button"
@@ -40,10 +40,13 @@ export default function HabitDNA({ dna, loading, onShare }: HabitDNAProps) {
           </button>
         )}
       </div>
-      <p className="habit-dna-label">
-        {dna.emoji} {dna.label}
-      </p>
-      <p className="habit-dna-tagline">{dna.tagline}</p>
+      <div>
+        <p className="habit-dna-emoji" aria-hidden>
+          {dna.emoji}
+        </p>
+        <p className="habit-dna-label">{dna.label}</p>
+        <p className="habit-dna-tagline">{dna.tagline}</p>
+      </div>
     </section>
   );
 }

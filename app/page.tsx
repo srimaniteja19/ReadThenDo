@@ -2,6 +2,7 @@
 
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import AuthorModeToggle from "@/components/AuthorModeToggle";
 import CheckInForm from "@/components/CheckInForm";
 import {
   BookInputToggle,
@@ -14,13 +15,17 @@ import BentoPlan from "@/components/BentoPlan";
 import ModeSwitcher from "@/components/ModeSwitcher";
 import ReadingStreak, { notifyStreakUpdated } from "@/components/ReadingStreak";
 import StepDots from "@/components/StepDots";
+import SynthesisInput from "@/components/SynthesisInput";
 import ThemeToggle from "@/components/ThemeToggle";
 import Toast from "@/components/Toast";
 import { buildPlanMarkdown } from "@/lib/exportMarkdown";
+import type { AuthorVoice } from "@/lib/authorMode";
+import { SAMPLE_BOOKS } from "@/lib/sampleBooks";
 import { incrementStreak } from "@/lib/streak";
 import type {
   APIResponse,
   AppMode,
+  BookInput,
   CheckInDay,
   CustomGoalInput,
   ExperienceLevel,
@@ -33,16 +38,18 @@ import type {
 type Screen = "input" | "loading" | "habits" | "plan" | "checkin";
 type Step = "input" | "habits" | "plan";
 
-const SAMPLE_BOOKS = {
-  "Atomic Habits":
-    "Atomic Habits by James Clear argues tiny changes compound into remarkable results. Core framework: Four Laws of Behavior Change — make it obvious, attractive, easy, satisfying. Habit stacking links a new habit to an existing one. Environment design shapes behavior more than motivation. Identity-based habits: say 'I am a runner' not 'I want to run.' Two-minute rule: any new habit should take less than two minutes to start. Never miss twice is the key recovery rule.",
-  "Deep Work":
-    "Deep Work by Cal Newport defines deep work as distraction-free concentration that pushes cognitive capabilities to their limit. Four philosophies: monastic, bimodal, rhythmic, journalistic. Practices: time-block every minute of your workday, quit social media by default, embrace boredom instead of reaching for your phone, do a shutdown ritual each evening.",
-  Essentialism:
-    "Essentialism by Greg McKeown is about the disciplined pursuit of less. Core practices: protect time for thinking, use extreme criteria (if it's not a clear yes it's a no), create graceful scripts for declining requests, design routines that make the essential the default. Tradeoffs are real and must be made deliberately.",
-  Ultralearning:
-    "Ultralearning by Scott Young profiles people achieving mastery fast. Nine principles include: directness (learn by doing the real thing), retrieval (test yourself instead of rereading), drill (attack weaknesses), feedback (seek honest immediate feedback). Feynman technique: explain simply, find gaps, return to source, simplify again.",
-} as const;
+const SYNTHESIS_LOADING_STEPS = [
+  "Reading all three books…",
+  "Finding cross-book consensus…",
+  "Extracting unified habits…",
+  "Building your 30-day system…",
+];
+
+const DEFAULT_SYNTHESIS_BOOKS: BookInput[] = [
+  { name: "", summary: "" },
+  { name: "", summary: "" },
+  { name: "", summary: "" },
+];
 
 const BOOK_TITLE_LOADING_STEPS = [
   "Looking up the book…",
@@ -137,14 +144,21 @@ export default function Home() {
   const [readingTimeLabel, setReadingTimeLabel] = useState<string | null>(null);
   const [activeBookTitle, setActiveBookTitle] = useState<string | null>(null);
 
+  const [synthesisBooks, setSynthesisBooks] =
+    useState<BookInput[]>(DEFAULT_SYNTHESIS_BOOKS);
+  const [authorMode, setAuthorMode] = useState(false);
+  const [authorVoice, setAuthorVoice] = useState<AuthorVoice>("auto");
+
   const loadingSteps =
     mode === "battle"
       ? BATTLE_LOADING_STEPS
-      : haventReadYet && screen === "loading"
-        ? BOOK_TITLE_LOADING_STEPS
-        : mode === "books"
-          ? BOOK_LOADING_STEPS
-          : CUSTOM_LOADING_STEPS;
+      : mode === "synthesis"
+        ? SYNTHESIS_LOADING_STEPS
+        : haventReadYet && screen === "loading"
+          ? BOOK_TITLE_LOADING_STEPS
+          : mode === "books"
+            ? BOOK_LOADING_STEPS
+            : CUSTOM_LOADING_STEPS;
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -233,6 +247,13 @@ export default function Home() {
     setScreen("input");
   }
 
+  function resetSynthesisState() {
+    setSynthesisBooks(DEFAULT_SYNTHESIS_BOOKS);
+    resetSharedResults();
+    setError(null);
+    setScreen("input");
+  }
+
   function shareText(text: string) {
     if (navigator.share) {
       navigator.share({ text }).catch(() => {
@@ -250,6 +271,7 @@ export default function Home() {
 
     if (mode === "books") resetBookState();
     else if (mode === "custom") resetCustomState();
+    else if (mode === "synthesis") resetSynthesisState();
     else resetBattleState();
 
     setMode(nextMode);
@@ -325,7 +347,11 @@ export default function Home() {
       const response = await fetch("/api/extract-habits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summary: summaryToUse }),
+        body: JSON.stringify({
+          summary: summaryToUse,
+          authorMode,
+          authorVoice,
+        }),
       });
 
       const result = await response.json();
@@ -376,7 +402,11 @@ export default function Home() {
       const response = await fetch("/api/custom-goal-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          authorMode,
+          authorVoice,
+        }),
       });
 
       const result = await response.json();
@@ -390,6 +420,47 @@ export default function Home() {
         payload.bookSummary,
         haventReadYet ? bookTitle.trim() : selectedCustomBook
       );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setScreen("input");
+    }
+  }
+
+  async function handleSynthesize() {
+    if (!synthesisBooks.every((book) => book.summary.trim())) {
+      setError("Please paste all 3 book summaries.");
+      return;
+    }
+
+    setError(null);
+    setScreen("loading");
+
+    try {
+      const response = await fetch("/api/synthesize-books", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          books: synthesisBooks,
+          authorMode,
+          authorVoice,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ?? "Something went wrong.");
+      }
+
+      const bookNames = result.bookSources?.length
+        ? result.bookSources.join(" + ")
+        : synthesisBooks.map((b) => b.name || "Book").join(" + ");
+
+      finishExtraction(
+        result,
+        synthesisBooks.map((b) => b.summary).join("\n\n"),
+        bookNames
+      );
+      showToast("Unified system ready ✨");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setScreen("input");
@@ -481,6 +552,8 @@ export default function Home() {
       resetBookState();
     } else if (mode === "custom") {
       resetCustomState();
+    } else if (mode === "synthesis") {
+      resetSynthesisState();
     } else {
       resetBattleState();
     }
@@ -644,6 +717,13 @@ export default function Home() {
               )}
 
               {error && <div className="error-banner">{error}</div>}
+
+              <AuthorModeToggle
+                enabled={authorMode}
+                voice={authorVoice}
+                onToggle={setAuthorMode}
+                onVoiceChange={setAuthorVoice}
+              />
 
               <button
                 type="button"
@@ -828,6 +908,13 @@ export default function Home() {
 
               {error && <div className="error-banner">{error}</div>}
 
+              <AuthorModeToggle
+                enabled={authorMode}
+                voice={authorVoice}
+                onToggle={setAuthorMode}
+                onVoiceChange={setAuthorVoice}
+              />
+
               <button
                 type="button"
                 onClick={handleGeneratePlan}
@@ -844,6 +931,23 @@ export default function Home() {
                   ? "Generate summary & build plan"
                   : "Generate my plan"}
               </button>
+            </>
+          )}
+
+          {screen === "input" && mode === "synthesis" && (
+            <>
+              <AuthorModeToggle
+                enabled={authorMode}
+                voice={authorVoice}
+                onToggle={setAuthorMode}
+                onVoiceChange={setAuthorVoice}
+              />
+              <SynthesisInput
+                books={synthesisBooks}
+                onChange={setSynthesisBooks}
+                onSubmit={handleSynthesize}
+                error={error}
+              />
             </>
           )}
 
@@ -888,9 +992,11 @@ export default function Home() {
               <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
                 {mode === "battle"
                   ? "Comparing habit systems…"
-                  : mode === "books"
-                    ? "Analyzing your book summary…"
-                    : "Applying the book to your goal…"}
+                  : mode === "synthesis"
+                    ? "Synthesizing across three books…"
+                    : mode === "books"
+                      ? "Analyzing your book summary…"
+                      : "Applying the book to your goal…"}
               </p>
               <ul className="card-gap" style={{ listStyle: "none", padding: 0 }}>
                 {loadingSteps.map((label, index) => (
@@ -920,9 +1026,11 @@ export default function Home() {
             <BentoHabits
               data={data}
               subtitle={
-                mode === "books"
-                  ? "Here are 3 habits you can start today, grounded in the book's framework."
-                  : `Here are 3 habits to ${customGoal.goal.toLowerCase()}, built on the book's framework.`
+                mode === "synthesis"
+                  ? "Three books, one system — these habits reflect what all three agree on."
+                  : mode === "books"
+                    ? "Here are 3 habits you can start today, grounded in the book's framework."
+                    : `Here are 3 habits to ${customGoal.goal.toLowerCase()}, built on the book's framework.`
               }
               habitDNA={habitDNA}
               dnaLoading={dnaLoading}

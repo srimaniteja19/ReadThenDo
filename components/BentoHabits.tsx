@@ -33,6 +33,22 @@ export default function BentoHabits({
 
   return (
     <div className="bento-results section-gap">
+      {data.synthesisInsight && (
+        <section className="synthesis-insight glass-card phase-enter">
+          <p className="section-heading mb-2">Cross-book consensus</p>
+          <p className="synthesis-insight-text">{data.synthesisInsight}</p>
+          {data.bookSources && data.bookSources.length > 0 && (
+            <div className="bento-stats mt-3">
+              {data.bookSources.map((source) => (
+                <span key={source} className="bento-stat">
+                  📖 {source}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <HabitDNA dna={habitDNA} loading={dnaLoading} onShare={onShareDNA} />
 
       <div className="bento-grid bento-grid--habits">

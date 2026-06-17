@@ -20,6 +20,16 @@ export function buildPlanMarkdown(
     lines.push("");
   }
 
+  if (data.bookSources?.length) {
+    lines.push(`**Sources:** ${data.bookSources.join(" · ")}`);
+    lines.push("");
+  }
+
+  if (data.synthesisInsight) {
+    lines.push(`**Cross-book consensus:** ${data.synthesisInsight}`);
+    lines.push("");
+  }
+
   if (habitDNA) {
     lines.push(`**Habit DNA:** ${habitDNA.emoji} ${habitDNA.label}`);
     lines.push(`*${habitDNA.tagline}*`);

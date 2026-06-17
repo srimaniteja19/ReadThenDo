@@ -1044,6 +1044,31 @@ body::before {
   font-size: 13px;
 }
 
+.author-mode-select {
+  margin-top: 10px;
+}
+
+.author-mode {
+  margin-bottom: 16px;
+}
+
+.synthesis-intro,
+.synthesis-book {
+  padding: 20px 22px;
+}
+
+.synthesis-insight {
+  padding: 22px 24px;
+  text-align: center;
+}
+
+.synthesis-insight-text {
+  font-size: clamp(1.05rem, 3vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
 .reading-time-hint strong {
   color: var(--accent-text);
 }

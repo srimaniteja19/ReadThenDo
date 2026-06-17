@@ -10,6 +10,7 @@ interface ModeSwitcherProps {
 
 const MODES: { id: AppMode; label: string }[] = [
   { id: "books", label: "📖 Books" },
+  { id: "synthesis", label: "✨ Synthesis" },
   { id: "custom", label: "🎯 Goal" },
   { id: "battle", label: "⚔️ Battle" },
 ];
@@ -37,7 +38,7 @@ export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
   return (
     <div
       ref={containerRef}
-      className="mode-switcher relative flex w-full max-w-lg rounded-full p-1"
+      className="mode-switcher relative flex w-full max-w-2xl rounded-full p-1"
       style={{ background: "var(--bg-subtle)" }}
     >
       <span

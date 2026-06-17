@@ -1,9 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthorModePrompt, type AuthorVoice } from "@/lib/authorMode";
+import { generateJSON } from "@/lib/gemini";
 import type {
   ExperienceLevel,
   GoalObjective,
   TimeAvailable,
+  APIResponse,
 } from "@/types/habits";
 
 const LEVEL_LABELS: Record<ExperienceLevel, string> = {
@@ -31,7 +33,8 @@ function buildPrompt(
   bookSummary: string,
   level: ExperienceLevel,
   time: TimeAvailable,
-  objective: GoalObjective
+  objective: GoalObjective,
+  authorPrompt: string
 ): string {
   return `You are a world-class coach for learning, fitness, and skill building.
 
@@ -46,7 +49,7 @@ Time available per day: ${TIME_LABELS[time]}
 Main objective: ${OBJECTIVE_LABELS[objective]}
 
 Using the book's core framework and principles, generate exactly 3 actionable habits they can start immediately to achieve this goal. Each habit must explicitly connect the book's ideas to this specific goal. The 30-day plan must apply the book's methodology to help them achieve this goal at their experience level and available time.
-
+${authorPrompt}
 Return ONLY valid JSON — no markdown, no backticks:
 {
   "habits": [
@@ -94,14 +97,6 @@ Return ONLY valid JSON — no markdown, no backticks:
 }`;
 }
 
-function stripMarkdownFences(text: string): string {
-  return text
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -110,6 +105,8 @@ export async function POST(request: NextRequest) {
     const level = body.level as ExperienceLevel;
     const time = body.time as TimeAvailable;
     const objective = body.objective as GoalObjective;
+    const authorMode = Boolean(body.authorMode);
+    const authorVoice = (body.authorVoice as AuthorVoice) ?? "auto";
 
     if (!goal) {
       return NextResponse.json(
@@ -125,23 +122,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured." },
-        { status: 500 }
-      );
-    }
+    const authorPrompt = getAuthorModePrompt(authorMode, {
+      voice: authorVoice,
+      contextTexts: [bookSummary, goal],
+    });
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-
-    const result = await model.generateContent(
-      buildPrompt(goal, bookSummary, level, time, objective)
+    const parsed = await generateJSON<APIResponse>(
+      buildPrompt(goal, bookSummary, level, time, objective, authorPrompt)
     );
-    const rawText = result.response.text();
-    const cleaned = stripMarkdownFences(rawText);
-    const parsed = JSON.parse(cleaned);
 
     return NextResponse.json(parsed);
   } catch (error) {

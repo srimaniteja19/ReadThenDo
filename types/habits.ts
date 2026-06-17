@@ -33,7 +33,7 @@ export interface HabitPlan {
   phases: Phase[];
 }
 
-export type AppMode = "books" | "custom" | "battle";
+export type AppMode = "books" | "custom" | "battle" | "synthesis";
 export type CheckInDay = 10 | 20 | 30;
 
 export interface HabitDNA {
@@ -56,8 +56,15 @@ export interface CheckInResult {
   plan: HabitPlan;
 }
 
+export interface BookInput {
+  name: string;
+  summary: string;
+}
+
 export interface APIResponse {
   habits: Habit[];
   plan: HabitPlan;
   habitDNA?: HabitDNA;
+  synthesisInsight?: string;
+  bookSources?: string[];
 }

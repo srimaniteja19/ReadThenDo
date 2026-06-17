@@ -34,6 +34,22 @@ export default function BentoPlan({
         </section>
       )}
 
+      {data.synthesisInsight && (
+        <section className="synthesis-insight glass-card phase-enter">
+          <p className="section-heading mb-2">Cross-book consensus</p>
+          <p className="synthesis-insight-text">{data.synthesisInsight}</p>
+          {data.bookSources && data.bookSources.length > 0 && (
+            <div className="bento-stats mt-3">
+              {data.bookSources.map((source) => (
+                <span key={source} className="bento-stat">
+                  📖 {source}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <div className="bento-grid bento-grid--plan">
         <section className="bento-cell bento-intro glass-card phase-enter">
           <p className="section-heading mb-2">30-day plan</p>

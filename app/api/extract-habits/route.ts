@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthorModePrompt, type AuthorVoice } from "@/lib/authorMode";
+import { generateJSON } from "@/lib/gemini";
+import type { APIResponse } from "@/types/habits";
 
-const PROMPT_TEMPLATE = `You are a habit coach and behavioral scientist. Given the book summary below, extract exactly 3 actionable habits a reader can start immediately.
-
-Return ONLY valid JSON with this exact structure — no markdown, no backticks:
+const JSON_SCHEMA = `Return ONLY valid JSON with this exact structure — no markdown, no backticks:
 {
   "habits": [
     {
@@ -47,23 +47,14 @@ Return ONLY valid JSON with this exact structure — no markdown, no backticks:
       }
     ]
   }
-}
-
-Book summary:
-`;
-
-function stripMarkdownFences(text: string): string {
-  return text
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-}
+}`;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const summary = body.summary?.trim();
+    const authorMode = Boolean(body.authorMode);
+    const authorVoice = (body.authorVoice as AuthorVoice) ?? "auto";
 
     if (!summary) {
       return NextResponse.json(
@@ -72,22 +63,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured." },
-        { status: 500 }
-      );
-    }
+    const authorPrompt = getAuthorModePrompt(authorMode, {
+      voice: authorVoice,
+      contextTexts: [summary],
+    });
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const prompt = `You are a habit coach and behavioral scientist. Given the book summary below, extract exactly 3 actionable habits a reader can start immediately.
+${authorPrompt}
+${JSON_SCHEMA}
 
-    const result = await model.generateContent(PROMPT_TEMPLATE + summary);
-    const rawText = result.response.text();
-    const cleaned = stripMarkdownFences(rawText);
-    const parsed = JSON.parse(cleaned);
+Book summary:
+${summary}`;
 
+    const parsed = await generateJSON<APIResponse>(prompt);
     return NextResponse.json(parsed);
   } catch (error) {
     const message =

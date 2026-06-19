@@ -25,7 +25,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <div className="ambient-orb ambient-orb--violet" aria-hidden />
         <div className="ambient-orb ambient-orb--green" aria-hidden />
         {children}

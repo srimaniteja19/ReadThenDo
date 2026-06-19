@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import ShareCardButton from "@/components/ShareCardButton";
 import type { HabitBattleResult } from "@/types/habits";
 
 interface BattleInputProps {
@@ -107,16 +108,24 @@ interface BattleResultProps {
   result: HabitBattleResult;
   bookAName: string;
   bookBName: string;
+  goal: string;
   onStartOver: () => void;
   onShare?: () => void;
+  onBuildPlan?: () => void;
+  buildingPlan?: boolean;
+  onShareCard?: (message: string) => void;
 }
 
 export function BattleResult({
   result,
   bookAName,
   bookBName,
+  goal,
   onStartOver,
   onShare,
+  onBuildPlan,
+  buildingPlan,
+  onShareCard,
 }: BattleResultProps) {
   const winnerIsA = result.winner === "A";
 
@@ -135,6 +144,14 @@ export function BattleResult({
           <button type="button" onClick={onShare} className="btn-ghost mt-4">
             Share verdict
           </button>
+        )}
+        {onShareCard && (
+          <ShareCardButton
+            variant="battle"
+            battle={{ result, bookAName, bookBName, goal }}
+            onDone={onShareCard}
+            className="btn-ghost mt-3"
+          />
         )}
       </section>
 
@@ -158,6 +175,18 @@ export function BattleResult({
           </p>
         </section>
       </div>
+
+      {onBuildPlan && (
+        <button
+          type="button"
+          onClick={onBuildPlan}
+          disabled={buildingPlan}
+          className="btn-primary btn-primary-shimmer w-full"
+        >
+          <Sparkles size={16} />
+          {buildingPlan ? "Building plan from winner…" : "Build plan from winner"}
+        </button>
+      )}
 
       <button type="button" onClick={onStartOver} className="btn-ghost w-full">
         Battle again

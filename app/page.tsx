@@ -13,13 +13,22 @@ import GoalChips from "@/components/GoalChips";
 import BentoHabits from "@/components/BentoHabits";
 import BentoPlan from "@/components/BentoPlan";
 import ModeSwitcher from "@/components/ModeSwitcher";
+import PlanCompare from "@/components/PlanCompare";
+import PlanLibrary from "@/components/PlanLibrary";
 import ReadingStreak, { notifyStreakUpdated } from "@/components/ReadingStreak";
 import StepDots from "@/components/StepDots";
 import SynthesisInput from "@/components/SynthesisInput";
 import ThemeToggle from "@/components/ThemeToggle";
 import Toast from "@/components/Toast";
 import { buildPlanMarkdown } from "@/lib/exportMarkdown";
+import { downloadPlanIcal } from "@/lib/exportIcal";
 import type { AuthorVoice } from "@/lib/authorMode";
+import {
+  getActivePlanId,
+  getSavedPlan,
+  setActivePlanId,
+  upsertCurrentPlan,
+} from "@/lib/planLibrary";
 import { SAMPLE_BOOKS } from "@/lib/sampleBooks";
 import { incrementStreak } from "@/lib/streak";
 import type {
@@ -32,6 +41,7 @@ import type {
   GoalObjective,
   HabitBattleResult,
   HabitDNA,
+  SavedPlan,
   TimeAvailable,
 } from "@/types/habits";
 
@@ -152,6 +162,24 @@ export default function Home() {
   const [authorMode, setAuthorMode] = useState(false);
   const [authorVoice, setAuthorVoice] = useState<AuthorVoice>("auto");
 
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [activePlanId, setActivePlanIdState] = useState<string | null>(null);
+  const [planStartDate, setPlanStartDate] = useState("");
+  const [completedDays, setCompletedDays] = useState<number[]>([]);
+  const [comparePlans, setComparePlans] = useState<{
+    a: SavedPlan;
+    b: SavedPlan;
+  } | null>(null);
+
+  const [synthesisUseGoal, setSynthesisUseGoal] = useState(false);
+  const [synthesisGoal, setSynthesisGoal] = useState("");
+  const [synthesisLevel, setSynthesisLevel] = useState<ExperienceLevel>("beginner");
+  const [synthesisTime, setSynthesisTime] = useState<TimeAvailable>("30min");
+  const [synthesisObjective, setSynthesisObjective] =
+    useState<GoalObjective>("habit");
+
+  const [battleBuildingPlan, setBattleBuildingPlan] = useState(false);
+
   const loadingSteps =
     mode === "battle"
       ? BATTLE_LOADING_STEPS
@@ -166,6 +194,84 @@ export default function Home() {
   const showToast = useCallback((message: string) => {
     setToast(message);
   }, []);
+
+  // Hydrate plan library from localStorage after mount (SSR-safe defaults above).
+  /* eslint-disable react-hooks/set-state-in-effect -- client-only restore from localStorage */
+  useEffect(() => {
+    const storedId = getActivePlanId();
+    const saved = storedId ? getSavedPlan(storedId) : null;
+
+    setActivePlanIdState(storedId);
+    setPlanStartDate(
+      saved?.planStartDate ?? new Date().toISOString().slice(0, 10)
+    );
+    setCompletedDays(saved?.completedDays ?? []);
+
+    if (saved) {
+      setMode(saved.mode);
+      setData(saved.data);
+      setHabitDNA(saved.habitDNA ?? null);
+      setActiveBookTitle(saved.title);
+      if (saved.customGoal) setCustomGoal(saved.customGoal);
+      setScreen(saved.screen ?? "habits");
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!data || !habitDNA) return;
+    upsertCurrentPlan({
+      title:
+        activeBookTitle ??
+        (mode === "custom"
+          ? customGoal.goal
+          : mode === "synthesis"
+            ? data.bookSources?.join(" + ") ?? "Synthesis plan"
+            : "My plan"),
+      mode,
+      data,
+      habitDNA,
+      customGoal: mode === "custom" ? customGoal : undefined,
+      planStartDate,
+      completedDays,
+      screen: screen === "plan" || screen === "checkin" ? "plan" : "habits",
+    });
+    // Persist Habit DNA once it loads async
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habitDNA]);
+
+  function persistCurrentPlan(
+    nextData: APIResponse,
+    options: {
+      screen?: "habits" | "plan";
+      habitDNAOverride?: HabitDNA | null;
+      title?: string | null;
+    } = {}
+  ) {
+    if (!nextData) return;
+
+    const title =
+      options.title ??
+      activeBookTitle ??
+      (mode === "custom"
+        ? customGoal.goal
+        : mode === "synthesis"
+          ? nextData.bookSources?.join(" + ") ?? "Synthesis plan"
+          : "My plan");
+
+    const saved = upsertCurrentPlan({
+      title,
+      mode,
+      data: nextData,
+      habitDNA: options.habitDNAOverride ?? habitDNA,
+      customGoal: mode === "custom" ? customGoal : undefined,
+      planStartDate,
+      completedDays,
+      screen: options.screen ?? (screen === "plan" || screen === "checkin" ? "plan" : "habits"),
+    });
+
+    setActivePlanIdState(saved.id);
+  }
 
   function beginLoading() {
     setLoadingStepIndex(0);
@@ -309,11 +415,46 @@ export default function Home() {
     setData(result);
     setHabitOrder([0, 1, 2]);
     setActiveBookTitle(title ?? selectedBook ?? (bookTitle || null));
+    setPlanStartDate(new Date().toISOString().slice(0, 10));
+    setCompletedDays([]);
     setScreen("habits");
     showToast(toastMessage);
     fetchHabitDNA(result.habits, contextSummary);
     incrementStreak();
     notifyStreakUpdated();
+    persistCurrentPlan(result, { screen: "habits", title: title ?? activeBookTitle });
+  }
+
+  function handleResumePlan(plan: SavedPlan) {
+    setMode(plan.mode);
+    setData(plan.data);
+    setHabitDNA(plan.habitDNA ?? null);
+    setActiveBookTitle(plan.title);
+    setPlanStartDate(plan.planStartDate ?? new Date().toISOString().slice(0, 10));
+    setCompletedDays(plan.completedDays ?? []);
+    setHabitOrder([0, 1, 2]);
+    setCheckInMessage(null);
+    setCheckInError(null);
+    setActivePlanId(plan.id);
+    setActivePlanIdState(plan.id);
+    if (plan.customGoal) setCustomGoal(plan.customGoal);
+    setScreen(plan.screen ?? "habits");
+    setLibraryOpen(false);
+    showToast("Plan resumed ✨");
+  }
+
+  function handleComparePlans(a: SavedPlan, b: SavedPlan) {
+    setComparePlans({ a, b });
+  }
+
+  function handlePlanStartDateChange(date: string) {
+    setPlanStartDate(date);
+    if (data) persistCurrentPlan(data, { title: activeBookTitle });
+  }
+
+  function handleCompletedDaysChange(days: number[]) {
+    setCompletedDays(days);
+    if (data) persistCurrentPlan(data, { title: activeBookTitle });
   }
 
   function handleCopyMarkdown() {
@@ -434,9 +575,23 @@ export default function Home() {
     }
   }
 
+  function handleExportCalendar() {
+    if (!data) return;
+    downloadPlanIcal(data, {
+      bookTitle: activeBookTitle ?? undefined,
+      startDate: planStartDate,
+    });
+    showToast("Calendar file downloaded ✨");
+  }
+
   async function handleSynthesize() {
     if (!synthesisBooks.every((book) => book.summary.trim())) {
       setError("Please paste all 3 book summaries.");
+      return;
+    }
+
+    if (synthesisUseGoal && !synthesisGoal.trim()) {
+      setError("Please enter a goal for the unified system.");
       return;
     }
 
@@ -444,14 +599,30 @@ export default function Home() {
     beginLoading();
 
     try {
-      const response = await fetch("/api/synthesize-books", {
+      const endpoint = synthesisUseGoal
+        ? "/api/synthesis-goal-plan"
+        : "/api/synthesize-books";
+
+      const body = synthesisUseGoal
+        ? {
+            books: synthesisBooks,
+            goal: synthesisGoal,
+            level: synthesisLevel,
+            time: synthesisTime,
+            objective: synthesisObjective,
+            authorMode,
+            authorVoice,
+          }
+        : {
+            books: synthesisBooks,
+            authorMode,
+            authorVoice,
+          };
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          books: synthesisBooks,
-          authorMode,
-          authorVoice,
-        }),
+        body: JSON.stringify(body),
       });
 
       const result = await response.json();
@@ -459,15 +630,17 @@ export default function Home() {
         throw new Error(result.error ?? "Something went wrong.");
       }
 
-      const bookNames = result.bookSources?.length
-        ? result.bookSources.join(" + ")
-        : synthesisBooks.map((b) => b.name || "Book").join(" + ");
+      const bookNames = synthesisUseGoal
+        ? `${synthesisGoal} · ${result.bookSources?.join(" + ") ?? "Synthesis"}`
+        : result.bookSources?.length
+          ? result.bookSources.join(" + ")
+          : synthesisBooks.map((b) => b.name || "Book").join(" + ");
 
       finishExtraction(
         result,
         synthesisBooks.map((b) => b.summary).join("\n\n"),
         bookNames,
-        "Unified system ready ✨"
+        synthesisUseGoal ? "Goal-focused system ready ✨" : "Unified system ready ✨"
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -518,6 +691,59 @@ export default function Home() {
     }
   }
 
+  async function handleBuildPlanFromBattle() {
+    if (!battleResult) return;
+
+    const winnerSummary =
+      battleResult.winner === "A" ? battleBookA : battleBookB;
+
+    setBattleBuildingPlan(true);
+    beginLoading();
+
+    try {
+      const response = await fetch("/api/custom-goal-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal: battleGoal,
+          bookSummary: winnerSummary,
+          level: "beginner",
+          time: "30min",
+          objective: "habit",
+          authorMode,
+          authorVoice,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ?? "Something went wrong.");
+      }
+
+      setMode("custom");
+      setCustomGoal({
+        goal: battleGoal,
+        bookSummary: winnerSummary,
+        level: "beginner",
+        time: "30min",
+        objective: "habit",
+      });
+      setBattleResult(null);
+
+      finishExtraction(
+        result,
+        winnerSummary,
+        battleResult.winnerName,
+        "Plan built from battle winner ✨"
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setScreen("input");
+    } finally {
+      setBattleBuildingPlan(false);
+    }
+  }
+
   async function handleCheckInSubmit(ratings: number[], reflection: string) {
     if (!data) return;
 
@@ -542,9 +768,11 @@ export default function Home() {
         throw new Error(result.error ?? "Something went wrong.");
       }
 
-      setData({ ...data, plan: result.plan });
+      const nextData = { ...data, plan: result.plan };
+      setData(nextData);
       setCheckInMessage(result.message);
       setScreen("plan");
+      persistCurrentPlan(nextData, { screen: "plan", title: activeBookTitle });
       showToast(`Day ${checkInDay} check-in saved ✨`);
     } catch (err) {
       setCheckInError(
@@ -596,6 +824,13 @@ export default function Home() {
     <>
       <ThemeToggle />
       <Toast message={toast} onDismiss={() => setToast(null)} />
+      <PlanLibrary
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onResume={handleResumePlan}
+        onCompare={handleComparePlans}
+        activePlanId={activePlanId}
+      />
 
       <div
         className={`page-shell ${
@@ -624,6 +859,13 @@ export default function Home() {
               <span>🌱</span>
             </div>
             <ReadingStreak />
+            <button
+              type="button"
+              onClick={() => setLibraryOpen(true)}
+              className="chip mt-4"
+            >
+              📚 Plan library
+            </button>
           </div>
 
           <div className="flex justify-center">
@@ -638,7 +880,15 @@ export default function Home() {
         </header>
 
         <main key={screen} className="section-gap screen-panel">
-          {screen === "input" && mode === "books" && (
+          {comparePlans && (
+            <PlanCompare
+              planA={comparePlans.a}
+              planB={comparePlans.b}
+              onClose={() => setComparePlans(null)}
+            />
+          )}
+
+          {!comparePlans && screen === "input" && mode === "books" && (
             <>
               <div>
                 <BookInputToggle
@@ -747,7 +997,7 @@ export default function Home() {
             </>
           )}
 
-          {screen === "input" && mode === "custom" && (
+          {!comparePlans && screen === "input" && mode === "custom" && (
             <>
               <div>
                 <BookInputToggle
@@ -942,7 +1192,7 @@ export default function Home() {
             </>
           )}
 
-          {screen === "input" && mode === "synthesis" && (
+          {!comparePlans && screen === "input" && mode === "synthesis" && (
             <>
               <AuthorModeToggle
                 enabled={authorMode}
@@ -955,11 +1205,21 @@ export default function Home() {
                 onChange={setSynthesisBooks}
                 onSubmit={handleSynthesize}
                 error={error}
+                useGoal={synthesisUseGoal}
+                onUseGoalChange={setSynthesisUseGoal}
+                goal={synthesisGoal}
+                onGoalChange={setSynthesisGoal}
+                level={synthesisLevel}
+                onLevelChange={setSynthesisLevel}
+                time={synthesisTime}
+                onTimeChange={setSynthesisTime}
+                objective={synthesisObjective}
+                onObjectiveChange={setSynthesisObjective}
               />
             </>
           )}
 
-          {screen === "input" && mode === "battle" && !battleResult && (
+          {!comparePlans && screen === "input" && mode === "battle" && !battleResult && (
             <BattleInput
               bookA={battleBookA}
               bookB={battleBookB}
@@ -977,21 +1237,25 @@ export default function Home() {
             />
           )}
 
-          {screen === "input" && mode === "battle" && battleResult && (
+          {!comparePlans && screen === "input" && mode === "battle" && battleResult && (
             <BattleResult
               result={battleResult}
               bookAName={battleBookAName}
               bookBName={battleBookBName}
+              goal={battleGoal}
               onStartOver={resetBattleState}
               onShare={() =>
                 shareText(
                   `${battleResult.verdict} — ${battleResult.winnerName} wins for "${battleGoal}" on ReadThenDo`
                 )
               }
+              onShareCard={showToast}
+              onBuildPlan={handleBuildPlanFromBattle}
+              buildingPlan={battleBuildingPlan}
             />
           )}
 
-          {screen === "loading" && (
+          {!comparePlans && screen === "loading" && (
             <div
               className="flex flex-col items-center justify-center py-16 text-center"
               style={{ gap: 24 }}
@@ -1029,12 +1293,14 @@ export default function Home() {
             </div>
           )}
 
-          {screen === "habits" && data && (
+          {!comparePlans && screen === "habits" && data && planStartDate && (
             <BentoHabits
               data={data}
               subtitle={
                 mode === "synthesis"
-                  ? "Three books, one system — these habits reflect what all three agree on."
+                  ? synthesisUseGoal
+                    ? `Unified system for "${synthesisGoal}" — habits all three books agree on.`
+                    : "Three books, one system — these habits reflect what all three agree on."
                   : mode === "books"
                     ? "Here are 3 habits you can start today, grounded in the book's framework."
                     : `Here are 3 habits to ${customGoal.goal.toLowerCase()}, built on the book's framework.`
@@ -1043,7 +1309,10 @@ export default function Home() {
               dnaLoading={dnaLoading}
               habitOrder={habitOrder}
               onOrderChange={setHabitOrder}
-              onViewPlan={() => setScreen("plan")}
+              onViewPlan={() => {
+                setScreen("plan");
+                persistCurrentPlan(data, { screen: "plan", title: activeBookTitle });
+              }}
               onCopy={showToast}
               onShareDNA={() =>
                 habitDNA &&
@@ -1051,10 +1320,15 @@ export default function Home() {
                   `${habitDNA.emoji} I'm a ${habitDNA.label} — ${habitDNA.tagline}`
                 )
               }
+              planStartDate={planStartDate}
+              completedDays={completedDays}
+              onPlanStartDateChange={handlePlanStartDateChange}
+              onCompletedDaysChange={handleCompletedDaysChange}
+              onToast={showToast}
             />
           )}
 
-          {screen === "plan" && data && (
+          {!comparePlans && screen === "plan" && data && planStartDate && (
             <BentoPlan
               data={data}
               showBackToHabits={mode !== "battle"}
@@ -1067,10 +1341,16 @@ export default function Home() {
                 setScreen("checkin");
               }}
               onCopyMarkdown={handleCopyMarkdown}
+              onExportCalendar={handleExportCalendar}
+              planStartDate={planStartDate}
+              completedDays={completedDays}
+              onPlanStartDateChange={handlePlanStartDateChange}
+              onCompletedDaysChange={handleCompletedDaysChange}
+              onToast={showToast}
             />
           )}
 
-          {screen === "checkin" && data && (
+          {!comparePlans && screen === "checkin" && data && (
             <CheckInForm
               key={checkInDay}
               data={data}

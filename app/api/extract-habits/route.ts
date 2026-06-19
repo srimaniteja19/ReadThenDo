@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthorModePrompt, type AuthorVoice } from "@/lib/authorMode";
+import { ANTI_HABITS_INSTRUCTION, ANTI_HABITS_JSON } from "@/lib/antiHabitsPrompt";
 import { generateJSON } from "@/lib/gemini";
 import type { APIResponse } from "@/types/habits";
 
 const JSON_SCHEMA = `Return ONLY valid JSON with this exact structure — no markdown, no backticks:
 {
+  ${ANTI_HABITS_JSON}
   "habits": [
     {
       "name": "Short habit name (max 6 words)",
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
     });
 
     const prompt = `You are a habit coach and behavioral scientist. Given the book summary below, extract exactly 3 actionable habits a reader can start immediately.
+${ANTI_HABITS_INSTRUCTION}
 ${authorPrompt}
 ${JSON_SCHEMA}
 

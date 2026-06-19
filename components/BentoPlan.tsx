@@ -1,7 +1,9 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import { Calendar, Copy } from "lucide-react";
+import DailyBrief from "@/components/DailyBrief";
 import PlanPhase from "@/components/PlanPhase";
+import ShareCardButton from "@/components/ShareCardButton";
 import type { CheckInDay, APIResponse } from "@/types/habits";
 
 interface BentoPlanProps {
@@ -12,6 +14,12 @@ interface BentoPlanProps {
   onStartOver: () => void;
   onCheckIn: (day: CheckInDay) => void;
   onCopyMarkdown?: () => void;
+  onExportCalendar?: () => void;
+  planStartDate: string;
+  completedDays: number[];
+  onPlanStartDateChange: (date: string) => void;
+  onCompletedDaysChange: (days: number[]) => void;
+  onToast?: (message: string) => void;
 }
 
 export default function BentoPlan({
@@ -22,6 +30,12 @@ export default function BentoPlan({
   onStartOver,
   onCheckIn,
   onCopyMarkdown,
+  onExportCalendar,
+  planStartDate,
+  completedDays,
+  onPlanStartDateChange,
+  onCompletedDaysChange,
+  onToast,
 }: BentoPlanProps) {
   return (
     <div className="bento-results section-gap">
@@ -33,6 +47,14 @@ export default function BentoPlan({
           </p>
         </section>
       )}
+
+      <DailyBrief
+        plan={data.plan}
+        planStartDate={planStartDate}
+        completedDays={completedDays}
+        onStartDateChange={onPlanStartDateChange}
+        onCompletedDaysChange={onCompletedDaysChange}
+      />
 
       {data.synthesisInsight && (
         <section className="synthesis-insight glass-card phase-enter">
@@ -46,6 +68,14 @@ export default function BentoPlan({
                 </span>
               ))}
             </div>
+          )}
+          {onToast && (
+            <ShareCardButton
+              variant="synthesis"
+              synthesisData={data}
+              onDone={onToast}
+              className="btn-ghost mt-4"
+            />
           )}
         </section>
       )}
@@ -91,6 +121,16 @@ export default function BentoPlan({
           >
             <Copy size={15} />
             Copy plan as Markdown
+          </button>
+        )}
+        {onExportCalendar && (
+          <button
+            type="button"
+            onClick={onExportCalendar}
+            className="btn-ghost w-full mb-3"
+          >
+            <Calendar size={15} />
+            Add to calendar (.ics)
           </button>
         )}
         <div className="flex flex-col gap-3 sm:flex-row">

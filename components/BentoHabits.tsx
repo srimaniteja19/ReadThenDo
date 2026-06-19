@@ -1,9 +1,12 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import AntiHabits from "@/components/AntiHabits";
+import DailyBrief from "@/components/DailyBrief";
 import HabitCard from "@/components/HabitCard";
 import HabitDNA from "@/components/HabitDNA";
 import HabitStackBuilder from "@/components/HabitStackBuilder";
+import ShareCardButton from "@/components/ShareCardButton";
 import type { APIResponse, HabitDNA as HabitDNAType } from "@/types/habits";
 
 interface BentoHabitsProps {
@@ -16,6 +19,11 @@ interface BentoHabitsProps {
   onViewPlan: () => void;
   onCopy?: (message: string) => void;
   onShareDNA?: () => void;
+  planStartDate: string;
+  completedDays: number[];
+  onPlanStartDateChange: (date: string) => void;
+  onCompletedDaysChange: (days: number[]) => void;
+  onToast?: (message: string) => void;
 }
 
 export default function BentoHabits({
@@ -28,6 +36,11 @@ export default function BentoHabits({
   onViewPlan,
   onCopy,
   onShareDNA,
+  planStartDate,
+  completedDays,
+  onPlanStartDateChange,
+  onCompletedDaysChange,
+  onToast,
 }: BentoHabitsProps) {
   const orderedHabits = habitOrder.map((i) => data.habits[i]);
 
@@ -46,10 +59,40 @@ export default function BentoHabits({
               ))}
             </div>
           )}
+          {onToast && (
+            <ShareCardButton
+              variant="synthesis"
+              synthesisData={data}
+              onDone={onToast}
+              className="btn-ghost mt-4"
+            />
+          )}
         </section>
       )}
 
-      <HabitDNA dna={habitDNA} loading={dnaLoading} onShare={onShareDNA} />
+      <DailyBrief
+        plan={data.plan}
+        planStartDate={planStartDate}
+        completedDays={completedDays}
+        onStartDateChange={onPlanStartDateChange}
+        onCompletedDaysChange={onCompletedDaysChange}
+        compact
+      />
+
+      <HabitDNA
+        dna={habitDNA}
+        loading={dnaLoading}
+        onShare={onShareDNA}
+        shareCardButton={
+          habitDNA && onToast ? (
+            <ShareCardButton variant="dna" dna={habitDNA} onDone={onToast} className="habit-dna-share" />
+          ) : undefined
+        }
+      />
+
+      {data.antiHabits && data.antiHabits.length > 0 && (
+        <AntiHabits antiHabits={data.antiHabits} />
+      )}
 
       <div className="bento-grid bento-grid--habits">
         <section className="bento-cell bento-intro glass-card phase-enter">

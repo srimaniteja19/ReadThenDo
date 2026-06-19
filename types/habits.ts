@@ -16,6 +16,11 @@ export interface Habit {
   intention: string;
 }
 
+export interface AntiHabit {
+  name: string;
+  why: string;
+}
+
 export interface PhaseItem {
   day: string;
   action: string;
@@ -67,4 +72,25 @@ export interface APIResponse {
   habitDNA?: HabitDNA;
   synthesisInsight?: string;
   bookSources?: string[];
+  antiHabits?: AntiHabit[];
+}
+
+export interface SavedPlan {
+  id: string;
+  title: string;
+  mode: AppMode;
+  savedAt: string;
+  data: APIResponse;
+  habitDNA?: HabitDNA | null;
+  customGoal?: CustomGoalInput;
+  planStartDate?: string;
+  completedDays?: number[];
+  screen?: "habits" | "plan";
+}
+
+export interface TodayAction {
+  planDay: number;
+  dayLabel: string;
+  action: string;
+  phaseName: string;
 }

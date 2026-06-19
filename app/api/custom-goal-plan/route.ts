@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthorModePrompt, type AuthorVoice } from "@/lib/authorMode";
+import { ANTI_HABITS_INSTRUCTION, ANTI_HABITS_JSON } from "@/lib/antiHabitsPrompt";
 import { generateJSON } from "@/lib/gemini";
 import type {
   ExperienceLevel,
@@ -49,9 +50,11 @@ Time available per day: ${TIME_LABELS[time]}
 Main objective: ${OBJECTIVE_LABELS[objective]}
 
 Using the book's core framework and principles, generate exactly 3 actionable habits they can start immediately to achieve this goal. Each habit must explicitly connect the book's ideas to this specific goal. The 30-day plan must apply the book's methodology to help them achieve this goal at their experience level and available time.
+${ANTI_HABITS_INSTRUCTION}
 ${authorPrompt}
 Return ONLY valid JSON — no markdown, no backticks:
 {
+  ${ANTI_HABITS_JSON}
   "habits": [
     {
       "name": "Short habit name (max 6 words)",

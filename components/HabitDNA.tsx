@@ -1,15 +1,17 @@
 "use client";
 
 import { Share2 } from "lucide-react";
+import type { ReactNode } from "react";
 import type { HabitDNA } from "@/types/habits";
 
 interface HabitDNAProps {
   dna: HabitDNA | null;
   loading?: boolean;
   onShare?: () => void;
+  shareCardButton?: ReactNode;
 }
 
-export default function HabitDNA({ dna, loading, onShare }: HabitDNAProps) {
+export default function HabitDNA({ dna, loading, onShare, shareCardButton }: HabitDNAProps) {
   if (loading) {
     return (
       <section className="habit-dna glass-card phase-enter">
@@ -29,16 +31,19 @@ export default function HabitDNA({ dna, loading, onShare }: HabitDNAProps) {
     <section className="habit-dna glass-card phase-enter">
       <div className="habit-dna-top">
         <p className="section-heading mb-0">Habit DNA</p>
-        {onShare && (
-          <button
-            type="button"
-            onClick={onShare}
-            className="habit-dna-share"
-            aria-label="Share Habit DNA"
-          >
-            <Share2 size={16} />
-          </button>
-        )}
+        <div className="flex gap-2">
+          {shareCardButton}
+          {onShare && (
+            <button
+              type="button"
+              onClick={onShare}
+              className="habit-dna-share"
+              aria-label="Share Habit DNA"
+            >
+              <Share2 size={16} />
+            </button>
+          )}
+        </div>
       </div>
       <div>
         <p className="habit-dna-emoji" aria-hidden>

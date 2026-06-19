@@ -2,7 +2,12 @@
 
 import { Sparkles } from "lucide-react";
 import { SAMPLE_BOOKS, SYNTHESIS_PRESET } from "@/lib/sampleBooks";
-import type { BookInput } from "@/types/habits";
+import type {
+  BookInput,
+  ExperienceLevel,
+  GoalObjective,
+  TimeAvailable,
+} from "@/types/habits";
 
 interface SynthesisInputProps {
   books: BookInput[];
@@ -10,6 +15,16 @@ interface SynthesisInputProps {
   onSubmit: () => void;
   error: string | null;
   loading?: boolean;
+  useGoal: boolean;
+  onUseGoalChange: (value: boolean) => void;
+  goal: string;
+  onGoalChange: (value: string) => void;
+  level: ExperienceLevel;
+  onLevelChange: (value: ExperienceLevel) => void;
+  time: TimeAvailable;
+  onTimeChange: (value: TimeAvailable) => void;
+  objective: GoalObjective;
+  onObjectiveChange: (value: GoalObjective) => void;
 }
 
 export default function SynthesisInput({
@@ -18,6 +33,16 @@ export default function SynthesisInput({
   onSubmit,
   error,
   loading,
+  useGoal,
+  onUseGoalChange,
+  goal,
+  onGoalChange,
+  level,
+  onLevelChange,
+  time,
+  onTimeChange,
+  objective,
+  onObjectiveChange,
 }: SynthesisInputProps) {
   function updateBook(index: number, field: keyof BookInput, value: string) {
     const next = books.map((book, i) =>
@@ -36,6 +61,7 @@ export default function SynthesisInput({
   }
 
   const allFilled = books.every((book) => book.summary.trim());
+  const goalReady = !useGoal || goal.trim();
 
   return (
     <div className="section-gap">
@@ -73,16 +99,77 @@ export default function SynthesisInput({
         </section>
       ))}
 
+      <section className="glass-card phase-enter synthesis-goal">
+        <label className="toggle-switch">
+          <input
+            type="checkbox"
+            checked={useGoal}
+            onChange={(e) => onUseGoalChange(e.target.checked)}
+          />
+          <span className="toggle-switch-track">
+            <span className="toggle-switch-thumb" />
+          </span>
+          <span>Apply unified system to a personal goal</span>
+        </label>
+
+        {useGoal && (
+          <div className="card-gap mt-4">
+            <input
+              type="text"
+              value={goal}
+              onChange={(e) => onGoalChange(e.target.value)}
+              placeholder="e.g. learn PostgreSQL, build a morning routine…"
+              className="distill-input"
+            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <select
+                value={level}
+                onChange={(e) => onLevelChange(e.target.value as ExperienceLevel)}
+                className="distill-select flex-1"
+              >
+                <option value="beginner">Complete beginner</option>
+                <option value="some">Some experience</option>
+                <option value="intermediate">Intermediate</option>
+              </select>
+              <select
+                value={time}
+                onChange={(e) => onTimeChange(e.target.value as TimeAvailable)}
+                className="distill-select flex-1"
+              >
+                <option value="15min">15 min</option>
+                <option value="30min">30 min</option>
+                <option value="1hour">1 hour</option>
+                <option value="2plus">2+ hours</option>
+              </select>
+              <select
+                value={objective}
+                onChange={(e) => onObjectiveChange(e.target.value as GoalObjective)}
+                className="distill-select flex-1"
+              >
+                <option value="habit">Build a habit</option>
+                <option value="skill">Gain a skill</option>
+                <option value="fitness">Get fit</option>
+                <option value="project">Create a project</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </section>
+
       {error && <div className="error-banner">{error}</div>}
 
       <button
         type="button"
         onClick={onSubmit}
-        disabled={!allFilled || loading}
+        disabled={!allFilled || !goalReady || loading}
         className="btn-primary btn-primary-shimmer"
       >
         <Sparkles size={16} />
-        {loading ? "Synthesizing…" : "Build unified system"}
+        {loading
+          ? "Synthesizing…"
+          : useGoal
+            ? "Build goal-focused unified system"
+            : "Build unified system"}
       </button>
     </div>
   );

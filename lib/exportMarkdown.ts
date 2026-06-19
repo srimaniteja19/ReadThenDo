@@ -30,6 +30,17 @@ export function buildPlanMarkdown(
     lines.push("");
   }
 
+  if (data.antiHabits?.length) {
+    lines.push("## Stop Doing");
+    lines.push("");
+    data.antiHabits.forEach((item, index) => {
+      lines.push(`### ${index + 1}. ${item.name}`);
+      lines.push("");
+      lines.push(item.why);
+      lines.push("");
+    });
+  }
+
   if (habitDNA) {
     lines.push(`**Habit DNA:** ${habitDNA.emoji} ${habitDNA.label}`);
     lines.push(`*${habitDNA.tagline}*`);

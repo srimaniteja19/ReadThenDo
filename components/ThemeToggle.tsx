@@ -1,23 +1,33 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function getThemeSnapshot() {
+  return document.documentElement.classList.contains("dark");
+}
+
+function getServerThemeSnapshot() {
+  return false;
+}
+
+function subscribeToTheme(callback: () => void) {
+  window.addEventListener("readthendo-theme-change", callback);
+  return () => window.removeEventListener("readthendo-theme-change", callback);
+}
 
 export default function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("distill-theme");
-    const dark = saved === "dark";
-    setIsDark(dark);
-    document.documentElement.classList.toggle("dark", dark);
-  }, []);
+  const isDark = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerThemeSnapshot
+  );
 
   function toggleTheme() {
     const next = !isDark;
-    setIsDark(next);
     document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("distill-theme", next ? "dark" : "light");
+    window.dispatchEvent(new Event("readthendo-theme-change"));
   }
 
   return (

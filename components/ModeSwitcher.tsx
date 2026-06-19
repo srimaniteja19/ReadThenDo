@@ -36,7 +36,7 @@ export default function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
   }, [mode]);
 
   return (
-    <div ref={containerRef} className="mode-switcher relative">
+    <div ref={containerRef} className="mode-switcher">
       <span
         className="mode-switcher-indicator"
         style={{

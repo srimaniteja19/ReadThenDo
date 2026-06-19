@@ -167,10 +167,14 @@ export default function Home() {
     setToast(message);
   }, []);
 
+  function beginLoading() {
+    setLoadingStepIndex(0);
+    setScreen("loading");
+  }
+
   useEffect(() => {
     if (screen !== "loading") return;
 
-    setLoadingStepIndex(0);
     const interval = setInterval(() => {
       setLoadingStepIndex((prev) =>
         prev < loadingSteps.length - 1 ? prev + 1 : prev
@@ -299,13 +303,14 @@ export default function Home() {
   function finishExtraction(
     result: APIResponse,
     contextSummary?: string,
-    title?: string | null
+    title?: string | null,
+    toastMessage = "3 habits extracted ✨"
   ) {
     setData(result);
     setHabitOrder([0, 1, 2]);
     setActiveBookTitle(title ?? selectedBook ?? (bookTitle || null));
     setScreen("habits");
-    showToast("3 habits extracted ✨");
+    showToast(toastMessage);
     fetchHabitDNA(result.habits, contextSummary);
     incrementStreak();
     notifyStreakUpdated();
@@ -337,7 +342,7 @@ export default function Home() {
     }
 
     setError(null);
-    setScreen("loading");
+    beginLoading();
 
     try {
       let summaryToUse = summary;
@@ -391,7 +396,7 @@ export default function Home() {
     }
 
     setError(null);
-    setScreen("loading");
+    beginLoading();
 
     try {
       let payload = { ...customGoal };
@@ -436,7 +441,7 @@ export default function Home() {
     }
 
     setError(null);
-    setScreen("loading");
+    beginLoading();
 
     try {
       const response = await fetch("/api/synthesize-books", {
@@ -461,9 +466,9 @@ export default function Home() {
       finishExtraction(
         result,
         synthesisBooks.map((b) => b.summary).join("\n\n"),
-        bookNames
+        bookNames,
+        "Unified system ready ✨"
       );
-      showToast("Unified system ready ✨");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setScreen("input");
@@ -482,7 +487,7 @@ export default function Home() {
 
     setError(null);
     setBattleLoading(true);
-    setScreen("loading");
+    beginLoading();
 
     try {
       const response = await fetch("/api/habit-battle", {
@@ -632,7 +637,7 @@ export default function Home() {
           )}
         </header>
 
-        <main className={`section-gap screen-panel`}>
+        <main key={screen} className="section-gap screen-panel">
           {screen === "input" && mode === "books" && (
             <>
               <div>
@@ -1067,6 +1072,7 @@ export default function Home() {
 
           {screen === "checkin" && data && (
             <CheckInForm
+              key={checkInDay}
               data={data}
               day={checkInDay}
               onDayChange={setCheckInDay}

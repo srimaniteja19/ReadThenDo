@@ -83,7 +83,7 @@ export default function BentoHabits({
         ))}
 
         <div className="bento-cell bento-actions phase-enter">
-          <button type="button" onClick={onViewPlan} className="btn-primary">
+          <button type="button" onClick={onViewPlan} className="btn-primary btn-primary-shimmer">
             <Sparkles size={16} />
             See 30-day plan
           </button>
